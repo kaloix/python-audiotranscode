@@ -25,7 +25,7 @@ parser.add_argument('input', help='Source path or file', metavar='<source>')
 parser.add_argument('output', help='Output path or file', metavar='<target>')
 parser.add_argument('-f', '--format', help='Target audio format in form of filename extension, required when converting directories', metavar='<format>')
 parser.add_argument('-b', '--bitrate', type=int, help='Target audio bitrate in kbps', metavar='<kbps>')
-parser.add_argument('-o', '--overwrite', action='store_true', help='Reencodes file(s) when target already existent instead of skipping them')
+parser.add_argument('-s', '--skip', action='store_true', help='Skip file(s) when already present at target, does not check target file contents in any way')
 parser.add_argument('-d', '--delete', action='store_true', help='Delete file(s) in target directory when there is no equivalent in the source directory') # TODO
 parser.add_argument('-c', '--codecs', action='store_true', help='List all available encoders and decoders on the command line')
 args = parser.parse_args()
@@ -51,7 +51,7 @@ if args.codecs:
 if not os.path.exists(args.input):
 	parser.error('Source does not exist')
 if os.path.isfile(args.input):
-	if not args.overwrite and os.path.isfile(args.output):
+	if args.skip and os.path.isfile(args.output):
 		print('Target file already exists, nothing to do')
 		raise SystemExit
 
@@ -65,7 +65,7 @@ if os.path.isfile(args.input):
 	except KeyboardInterrupt:
 		if os.path.exists(args.output):
 			os.remove(args.output)
-		print(red('Aborted'))
+		print(red('Canceled'))
 	else:
 		print(green('OK'))
 	raise SystemExit
@@ -108,7 +108,7 @@ for (current_indir, dirnames, filenames) in os.walk(args.input):
 		outfile = os.path.join(current_outdir, name.rstrip(extension) + args.format)
 		
 		# Skip known others
-		if not args.overwrite and extension in skip_format:
+		if args.skip and extension in skip_format:
 			print('Skipping non-audio: {}'.format(infile))
 			skipped_format += 1
 			continue
@@ -125,7 +125,7 @@ for (current_indir, dirnames, filenames) in os.walk(args.input):
 print('{} files to convert, skipped {} already present in output, skipped {} non-audio files'.format(len(file_transcodings), skipped_present, skipped_format))
 user_continue = input('Continue? [y/n] ')
 if not user_continue == 'y':
-	print(red('Aborted'))
+	print(red('Canceled'))
 	raise SystemExit
 
 # Error counter
@@ -149,7 +149,7 @@ for file in file_transcodings:
 	except KeyboardInterrupt:
 		if os.path.exists(file['out']):
 			os.remove(file['out'])
-		print(red('Aborted'))
+		print(red('Canceled'))
 		break
 	else:
 		print(green('OK'))
@@ -158,5 +158,6 @@ for file in file_transcodings:
 stat_string = list()
 for extension in error_count:
 	stat_string.append('{}x .{}'.format(error_count[extension], extension))
-print(red('Faild to transcode: {}'.format(', '.join(stat_string))))
+if len(error_count) > 0:
+	print(red('Faild to transcode: {}'.format(', '.join(stat_string))))
 
