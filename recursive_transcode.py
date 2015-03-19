@@ -106,11 +106,11 @@ for (current_indir, dirnames, filenames) in os.walk(args.input):
 		valid_outfiles.append(os.path.abspath(outfile))
 
 		# Skip ones that are present in target directory
-		if args.skip and os.path.exists(outfile):
+		if args.skip and os.path.isfile(outfile):
 			skipped += 1
 			continue
 
-		# Store as dict instead of tuple to prevent future faulty file deletions
+		# Store as dict instead of tuple to prevent confusion
 		file_transcodings.append({'in': infile, 'ext': extension, 'out': outfile})
 
 # Ask user to continue
