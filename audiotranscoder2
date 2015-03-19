@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 audiotranscode
-Copyright (c) 2013 Tom Wallroth (project author),
-              2015 Stefan Schindler (this file only)
+Copyright (c) 2013 Tom Wallroth, 2015 Stefan Schindler
 
 Sources on github:
   http://github.com/devsnd/audiotranscode/
@@ -40,23 +39,26 @@ transcoder = audiotranscode.AudioTranscode()
 def list_codecs():
 	outstring = list()
 	row_format = "{:>10}" * 3
-	outstring.append('Encoders:')
-	outstring.append(row_format.format('ENCODER', 'INSTALLED', 'FILETYPE'))
-	for enc in transcoder.Encoders:
-		avail = 'yes' if enc.available() else 'no'
-		outstring.append(row_format.format(enc.command[0], avail, enc.filetype))
-
 	outstring.append('Decoders:')
 	outstring.append(row_format.format('DECODER', 'INSTALLED', 'FILETYPE'))
 	for dec in transcoder.Decoders:
 		avail = 'yes' if dec.available() else 'no'
 		outstring.append(row_format.format(dec.command[0], avail, dec.filetype))
+
+	outstring.append('Encoders:')
+	outstring.append(row_format.format('ENCODER', 'INSTALLED', 'FILETYPE'))
+	for enc in transcoder.Encoders:
+		avail = 'yes' if enc.available() else 'no'
+		outstring.append(row_format.format(enc.command[0], avail, enc.filetype))
 	return '\n'.join(outstring)
 
 # Arguments
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, 
-		description='Convert audo files or a directory of audio files between the following formats:\n{}'.format(list_codecs()),
-		epilog='Copyright (c) 2013 Tom Wallroth, 2015 Stefan Schindler. Licensed under GPLv3+.')
+	description='Convert a audo file or a directory of audio files between the following formats:\n'
+	'{}'.format(list_codecs()),
+	epilog='Copyright (c) 2013 Tom Wallroth (project author),\n'
+	'              2015 Stefan Schindler (this script only)\n'
+	'Licensed under the GNU General Public License version 3 or later')
 parser.add_argument('input', help='Source path or file', metavar='<source>')
 parser.add_argument('output', help='Output path or file, must be of same type as source', metavar='<target>')
 parser.add_argument('-b', '--bitrate', type=int, help='Target audio bitrate in kbps', metavar='<kbps>')
