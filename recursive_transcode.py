@@ -77,10 +77,7 @@ if args.format is None:
 	parser.error('Specify --format of target when converting directories')
 
 # Validate target format
-valid_format = False
-for enc in transcoder.Encoders:
-	valid_format |= enc.filetype == args.format
-if not valid_format:
+if not args.format in transcoder.available_encoder_formats():
 	parser.error('{} is not a valid target format'.format(args.format))
 
 # Containers and counters
