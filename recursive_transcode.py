@@ -26,7 +26,7 @@ parser.add_argument('output', help='Output path or file', metavar='<target>')
 parser.add_argument('-f', '--format', help='Target audio format in form of filename extension, required when converting directories', metavar='<format>')
 parser.add_argument('-b', '--bitrate', type=int, help='Target audio bitrate in kbps', metavar='<kbps>')
 parser.add_argument('-s', '--skip', action='store_true', help='Skip file(s) when already present at target, does not check target file contents in any way')
-parser.add_argument('-d', '--delete', action='store_true', help='Delete file(s) in target directory when there is no equivalent in the source directory')
+parser.add_argument('-d', '--delete', action='store_true', help='Delete files and folders in target directory when there is no equivalent in the source directory')
 parser.add_argument('-c', '--codecs', action='store_true', help='List all available encoders and decoders on the command line')
 args = parser.parse_args()
 
