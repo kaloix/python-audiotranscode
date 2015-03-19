@@ -6,12 +6,9 @@ import argparse
 import audiotranscode
 
 # Colors
-YELLOW = '\033[33m'
 RED = '\033[31m'
 GREEN = '\033[32m'
 ENDC = '\033[0m'
-def yellow(msg):
-	return(''.join([YELLOW, msg, ENDC]))
 def red(msg):
 	return(''.join([RED, msg, ENDC]))
 def green(msg):
@@ -22,12 +19,12 @@ parser = argparse.ArgumentParser(
 		description='Converts audo files to the desired format preserving the directory structure',
 		epilog='Copyright © 2015 Stefan Schindler. Licensed under the GNU General Public License Version 3.')
 parser.add_argument('input', help='Source path or file', metavar='<source>')
-parser.add_argument('output', help='Output path or file', metavar='<target>')
-parser.add_argument('-f', '--format', help='Target audio format in form of filename extension, required when converting directories', metavar='<format>')
+parser.add_argument('output', help='Output path or file, must be of same type as source', metavar='<target>')
+parser.add_argument('-c', '--codecs', action='store_true', help='List all available encoders and decoders on the command line')
 parser.add_argument('-b', '--bitrate', type=int, help='Target audio bitrate in kbps', metavar='<kbps>')
+parser.add_argument('-f', '--format', help='Target audio format in form of filename extension, required when converting directories', metavar='<format>')
 parser.add_argument('-s', '--skip', action='store_true', help='Skip file(s) when already present at target, does not check target file contents in any way')
 parser.add_argument('-d', '--delete', action='store_true', help='Delete files and folders in target directory when there is no equivalent in the source directory')
-parser.add_argument('-c', '--codecs', action='store_true', help='List all available encoders and decoders on the command line')
 args = parser.parse_args()
 
 # List available codecs
@@ -41,7 +38,7 @@ if args.codecs:
 		print(row_format.format(enc.command[0], avail, enc.filetype))
 
 	print('Decoders:')
-	print(row_format.format('ENCODER', 'INSTALLED', 'FILETYPE'))
+	print(row_format.format('DECODER', 'INSTALLED', 'FILETYPE'))
 	for dec in transcode.Decoders:
 		avail = 'yes' if dec.available() else 'no'
 		print(row_format.format(dec.command[0], avail, dec.filetype))
@@ -59,26 +56,26 @@ if os.path.isfile(args.input):
 	try:
 		transcoder.transcode(args.input, args.output, args.bitrate)
 	except (audiotranscode.TranscodeError, IOError) as err:
-		if os.path.exists(args.output):
+		if os.path.isfile(args.output):
 			os.remove(args.output)
 		print(red(str(err)))
 	except KeyboardInterrupt:
-		if os.path.exists(args.output):
+		if os.path.isfile(args.output):
 			os.remove(args.output)
 		print(red('Canceled'))
 	else:
 		print(green('OK'))
 	raise SystemExit
 
-# Validate source and target as directories
+# Convert directory, validate source and target
 if not os.path.isdir(args.input):
 	parser.error('Source is invalid')
-if not os.path.exists(args.output):
+if not os.path.isdir(args.output):
 	parser.error('Target directory does not exist')
 if args.format is None:
 	parser.error('Specify target format when converting directories')
 
-# Check target format
+# Validate target format
 valid_format = False
 for enc in transcoder.Encoders:
 	valid_format |= enc.filetype == args.format
@@ -109,7 +106,7 @@ for (current_indir, dirnames, filenames) in os.walk(args.input):
 		outfile = os.path.join(current_outdir, name.rstrip(extension) + args.format)
 		valid_outfiles.append(os.path.abspath(outfile))
 
-		# Skip known others
+		# Skip known non-audios
 		if extension in skip_format:
 			print('Skipping non-audio: {}'.format(infile))
 			skipped_format += 1
@@ -131,7 +128,7 @@ def ask_continue():
 	except KeyboardInterrupt:
 		print(red('Canceled'))
 		raise SystemExit
-	if not user_continue == 'y':
+	if user_continue != 'y':
 		print(red('Canceled'))
 		raise SystemExit
 if file_transcodings:
@@ -156,12 +153,12 @@ for file in file_transcodings:
 	try:
 		transcoder.transcode(file['in'], file['out'], args.bitrate)
 	except (audiotranscode.TranscodeError, IOError) as err:
-		if os.path.exists(file['out']):
+		if os.path.isfile(file['out']):
 			os.remove(file['out'])
 		count_error(file['ext'])
 		print(red(str(err).strip('\'')))
 	except KeyboardInterrupt:
-		if os.path.exists(file['out']):
+		if os.path.isfile(file['out']):
 			os.remove(file['out'])
 		print(red('Canceled'))
 		break
