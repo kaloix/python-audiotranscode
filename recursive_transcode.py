@@ -39,7 +39,7 @@ if args.codecs:
 
 	print('Decoders:')
 	print(row_format.format('DECODER', 'INSTALLED', 'FILETYPE'))
-	for dec in transcode.Decoders:
+	for dec in transcoder.Decoders:
 		avail = 'yes' if dec.available() else 'no'
 		print(row_format.format(dec.command[0], avail, dec.filetype))
 	raise SystemExit
@@ -59,6 +59,7 @@ if os.path.isfile(args.input):
 		if os.path.isfile(args.output):
 			os.remove(args.output)
 		print(red(str(err)))
+		print('Try the --codecs switch to see all installed codecs')
 	except KeyboardInterrupt:
 		if os.path.isfile(args.output):
 			os.remove(args.output)
@@ -83,11 +84,9 @@ if not valid_format:
 	parser.error('{} is not a valid target format'.format(args.format))
 
 # Containers and counters
-skip_format = ['jpg', 'png', 'pdf', 'txt', 'md']
 file_transcodings = list()
 valid_outfiles = list()
-skipped_format = 0
-skipped_present = 0
+skipped = 0
 
 # Search input directory
 for (current_indir, dirnames, filenames) in os.walk(args.input):
@@ -106,22 +105,16 @@ for (current_indir, dirnames, filenames) in os.walk(args.input):
 		outfile = os.path.join(current_outdir, name.rstrip(extension) + args.format)
 		valid_outfiles.append(os.path.abspath(outfile))
 
-		# Skip known non-audios
-		if extension in skip_format:
-			print('Skipping non-audio: {}'.format(infile))
-			skipped_format += 1
-			continue
-
 		# Skip ones that are present in target directory
 		if args.skip and os.path.exists(outfile):
-			skipped_present += 1
+			skipped += 1
 			continue
 
 		# Store as dict instead of tuple to prevent future faulty file deletions
 		file_transcodings.append({'in': infile, 'ext': extension, 'out': outfile})
 
 # Ask user to continue
-print('{} files to convert, skipped {} non-audio files, skipped {} already present in target directory'.format(len(file_transcodings), skipped_format, skipped_present))
+print('{} files to convert, skipped {} already present in target directory'.format(len(file_transcodings), skipped))
 def ask_continue():
 	try:
 		user_continue = input('Continue? [y/n] ')
@@ -137,17 +130,10 @@ elif not args.delete:
 	print('Nothing to do')
 	raise SystemExit
 
-# Transcoding counters
+# Transcode files with audiotranscode by Tom Wallroth under GPLv3
 error_count = dict()
-def count_error(extension):
-	if extension in error_count:
-		error_count[extension] += 1
-	else:
-		error_count[extension] = 1
 success_count = 0
 total_count = 0
-
-# Transcode files with audiotranscode by Tom Wallroth under GPLv3
 for file in file_transcodings:
 	print('[{}/{}] Converting {} ...'.format(total_count+1, len(file_transcodings), file['in']), end=' ', flush=True)
 	try:
@@ -155,7 +141,10 @@ for file in file_transcodings:
 	except (audiotranscode.TranscodeError, IOError) as err:
 		if os.path.isfile(file['out']):
 			os.remove(file['out'])
-		count_error(file['ext'])
+		if file['ext'] in error_count:
+			error_count[file['ext']] += 1
+		else:
+			error_count[file['ext']] = 1
 		print(red(str(err).strip('\'')))
 	except KeyboardInterrupt:
 		if os.path.isfile(file['out']):
@@ -175,6 +164,7 @@ for extension in error_count:
 	stat_string.append('{}x .{}'.format(error_count[extension], extension))
 if len(error_count) > 0:
 	print(red('Faild to transcode: {}'.format(', '.join(stat_string))))
+	print('Try the --codecs switch to see all installed codecs')
 
 # Find invalid target files
 if not args.delete:
@@ -188,7 +178,7 @@ for (dirpath, dirnames, filenames) in os.walk(args.output):
 			invalid_outfiles.append(filepath)
 
 # Ask user for confirmation
-print('About to delete {} invalid files in target directory'.format(len(invalid_outfiles)))
+print('Will delete {} invalid files in target directory'.format(len(invalid_outfiles)))
 if len(invalid_outfiles) > 0:
 	ask_continue()
 	for entry in invalid_outfiles:
