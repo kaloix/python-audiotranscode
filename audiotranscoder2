@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 audiotranscode
-Copyright (c) 2013 Tom Wallroth,
+Copyright (c) 2013 Tom Wallroth (project author),
               2015 Stefan Schindler (this file only)
 
 Sources on github:
@@ -30,43 +30,40 @@ import argparse
 import audiotranscode
 
 # Colors
-RED = '\033[31m'
-GREEN = '\033[32m'
-ENDC = '\033[0m'
 def red(msg):
-	return(''.join([RED, msg, ENDC]))
+	return('\033[31m{}\033[0m'.format(msg))
 def green(msg):
-	return(''.join([GREEN, msg, ENDC]))
-
-# Arguments
-parser = argparse.ArgumentParser(
-		description='Converts audo files to the desired format preserving the directory structure',
-		epilog='Copyright © 2015 Stefan Schindler. Licensed under the GNU General Public License Version 3.')
-parser.add_argument('input', help='Source path or file', metavar='<source>')
-parser.add_argument('output', help='Output path or file, must be of same type as source', metavar='<target>')
-parser.add_argument('-c', '--codecs', action='store_true', help='List all available encoders and decoders on the command line')
-parser.add_argument('-b', '--bitrate', type=int, help='Target audio bitrate in kbps', metavar='<kbps>')
-parser.add_argument('-f', '--format', help='Target audio format in form of filename extension, required when converting directories', metavar='<format>')
-parser.add_argument('-s', '--skip', action='store_true', help='Skip file(s) when already present at target, does not check target file contents in any way')
-parser.add_argument('-d', '--delete', action='store_true', help='Delete files and folders in target directory when there is no equivalent in the source directory')
-args = parser.parse_args()
+	return('\033[32m{}\033[0m'.format(msg))
 
 # List available codecs
 transcoder = audiotranscode.AudioTranscode()
-if args.codecs:
+def list_codecs():
+	outstring = list()
 	row_format = "{:>10}" * 3
-	print('Encoders:')
-	print(row_format.format('ENCODER', 'INSTALLED', 'FILETYPE'))
+	outstring.append('Encoders:')
+	outstring.append(row_format.format('ENCODER', 'INSTALLED', 'FILETYPE'))
 	for enc in transcoder.Encoders:
 		avail = 'yes' if enc.available() else 'no'
-		print(row_format.format(enc.command[0], avail, enc.filetype))
+		outstring.append(row_format.format(enc.command[0], avail, enc.filetype))
 
-	print('Decoders:')
-	print(row_format.format('DECODER', 'INSTALLED', 'FILETYPE'))
+	outstring.append('Decoders:')
+	outstring.append(row_format.format('DECODER', 'INSTALLED', 'FILETYPE'))
 	for dec in transcoder.Decoders:
 		avail = 'yes' if dec.available() else 'no'
-		print(row_format.format(dec.command[0], avail, dec.filetype))
-	raise SystemExit
+		outstring.append(row_format.format(dec.command[0], avail, dec.filetype))
+	return '\n'.join(outstring)
+
+# Arguments
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, 
+		description='Convert audo files or a directory of audio files between the following formats:\n{}'.format(list_codecs()),
+		epilog='Copyright (c) 2013 Tom Wallroth, 2015 Stefan Schindler. Licensed under GPLv3+.')
+parser.add_argument('input', help='Source path or file', metavar='<source>')
+parser.add_argument('output', help='Output path or file, must be of same type as source', metavar='<target>')
+parser.add_argument('-b', '--bitrate', type=int, help='Target audio bitrate in kbps', metavar='<kbps>')
+parser.add_argument('-f', '--format', help='Target audio format in form of filename extension, required when converting directories', metavar='<filetype>')
+parser.add_argument('-s', '--skip', action='store_true', help='Skip files when already present at target, does not check content of target files in any way')
+parser.add_argument('-d', '--delete', action='store_true', help='Delete files and folders in target directory when there is no equivalent in the source directory')
+args = parser.parse_args()
 
 # Convert single file
 if not os.path.exists(args.input):
@@ -83,7 +80,7 @@ if os.path.isfile(args.input):
 		if os.path.isfile(args.output):
 			os.remove(args.output)
 		print(red(str(err)))
-		print('Try the --codecs switch to see all installed codecs')
+		print('Try the --help switch to see all installed codecs')
 	except KeyboardInterrupt:
 		if os.path.isfile(args.output):
 			os.remove(args.output)
@@ -185,7 +182,7 @@ for extension in error_count:
 	stat_string.append('{}x .{}'.format(error_count[extension], extension))
 if len(error_count) > 0:
 	print(red('Faild to transcode: {}'.format(', '.join(stat_string))))
-	print('Try the --codecs switch to see all installed codecs')
+	print('Try the --help switch to see all installed codecs')
 
 # Find invalid target files
 if not args.delete:
