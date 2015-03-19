@@ -74,7 +74,7 @@ if not os.path.isdir(args.input):
 if not os.path.isdir(args.output):
 	parser.error('Target directory does not exist')
 if args.format is None:
-	parser.error('Specify target format when converting directories')
+	parser.error('Specify --format of target when converting directories')
 
 # Validate target format
 valid_format = False
@@ -130,7 +130,7 @@ elif not args.delete:
 	print('Nothing to do')
 	raise SystemExit
 
-# Transcode files with audiotranscode by Tom Wallroth under GPLv3
+# Transcode files recursively
 error_count = dict()
 success_count = 0
 total_count = 0
